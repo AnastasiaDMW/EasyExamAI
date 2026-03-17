@@ -20,37 +20,33 @@ class FakeDoc:
         self.metadata = {}
 
 
-@pytest.fixture(autouse=True)
-def patch_all(monkeypatch):
-    fake_llm = FakeLLM()
-    
-    import llm.llm_model as llm_module
-    monkeypatch.setattr(llm_module, "llm", fake_llm)
-    
-    import skills.explain_topic as explain_module
-    import skills.generate_test as generate_module
-    import skills.process_document as process_module
-    import agents.orchestrator_agent as orchestrator_module
-    monkeypatch.setattr(explain_module, "llm", fake_llm)
-    monkeypatch.setattr(generate_module, "llm", fake_llm)
-    monkeypatch.setattr(process_module, "llm", fake_llm)
-    monkeypatch.setattr(orchestrator_module, "llm", fake_llm)
-
-    import skills.semantic_search as search_module
-
-    def fake_retrieve(query: str):
-        return [FakeDoc(f"This text contains {query}")]
-
-    def fake_semantic_search(query: str):
-        return f"context about {query}"
-
-    monkeypatch.setattr(search_module, "retrieve_documents", fake_retrieve)
-    monkeypatch.setattr(search_module, "semantic_search", fake_semantic_search)
+fake_llm = FakeLLM()
 
 
-import importlib
+def fake_retrieve(query: str):
+    return [FakeDoc(f"This text contains {query}")]
 
-eval_runner = importlib.import_module("evals.eval_runner")
+def fake_semantic_search(query: str):
+    return f"context about {query}"
+
+
+import llm.llm_model as llm_module
+llm_module.llm = fake_llm
+
+import skills.explain_topic as explain_module
+import skills.generate_test as generate_module
+import skills.process_document as process_module
+import agents.orchestrator_agent as orchestrator_module
+explain_module.llm = fake_llm
+generate_module.llm = fake_llm
+process_module.llm = fake_llm
+orchestrator_module.llm = fake_llm
+
+import skills.semantic_search as search_module
+search_module.retrieve_documents = fake_retrieve
+search_module.semantic_search = fake_semantic_search
+
+from evals import eval_runner
 
 
 def test_routing():
