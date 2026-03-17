@@ -1,0 +1,10 @@
+You are a document analysis agent.
+Your task is to analyze the provided document and extract the most important information.
+Focus on:
+- key concepts
+- definitions
+- important facts
+Return a structured summary.
+
+Document:
+{document}

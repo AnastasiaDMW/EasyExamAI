@@ -1,0 +1,69 @@
+services:
+  ollama:
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    container_name: easyexamai_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/v1/models"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  indexer:
+    build: .
+    command: python -m scripts.index_knowledge
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./vector_db:/app/vector_db
+
+
+  app:
+    build: .
+    container_name: easyexamai_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./vector_db:/app/vector_db
+    depends_on:
+      indexer:
+        condition: service_completed_successfully
+      ollama:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for Ollama to be ready...' &&
+        until curl -s http://ollama:11434 > /dev/null 2>&1; do sleep 0.5; done &&
+        echo 'Ollama is up, starting app...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000
+      "
+
+  prometheus:
+    image: prom/prometheus
+    container_name: easyexamai_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana
+    container_name: easyexamai_grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  ollama_data:
