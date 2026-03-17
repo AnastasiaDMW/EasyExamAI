@@ -1,14 +1,9 @@
 import sys
 import os
 import pytest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from evals.eval_runner import (
-    eval_routing,
-    eval_retrieval,
-    eval_latency,
-    eval_end_to_end
-)
 
 
 class FakeLLM:
@@ -26,16 +21,16 @@ class FakeDoc:
 
 
 @pytest.fixture(autouse=True)
-def patch_llm_and_retrieval(monkeypatch):
+def patch_all(monkeypatch):
     fake_llm = FakeLLM()
-
+    
     import llm.llm_model as llm_module
+    monkeypatch.setattr(llm_module, "llm", fake_llm)
+    
     import skills.explain_topic as explain_module
     import skills.generate_test as generate_module
     import skills.process_document as process_module
     import agents.orchestrator_agent as orchestrator_module
-
-    monkeypatch.setattr(llm_module, "llm", fake_llm)
     monkeypatch.setattr(explain_module, "llm", fake_llm)
     monkeypatch.setattr(generate_module, "llm", fake_llm)
     monkeypatch.setattr(process_module, "llm", fake_llm)
@@ -44,7 +39,7 @@ def patch_llm_and_retrieval(monkeypatch):
     import skills.semantic_search as search_module
 
     def fake_retrieve(query: str):
-        return [FakeDoc(f"This text contains {query}")]  
+        return [FakeDoc(f"This text contains {query}")]
 
     def fake_semantic_search(query: str):
         return f"context about {query}"
@@ -53,17 +48,22 @@ def patch_llm_and_retrieval(monkeypatch):
     monkeypatch.setattr(search_module, "semantic_search", fake_semantic_search)
 
 
+import importlib
+
+eval_runner = importlib.import_module("evals.eval_runner")
+
+
 def test_routing():
-    accuracy = eval_routing()
+    accuracy = eval_runner.eval_routing()
     assert accuracy >= 0.5
 
 def test_retrieval():
-    score = eval_retrieval()
+    score = eval_runner.eval_retrieval()
     assert score >= 0.5
 
 def test_latency():
-    avg_latency = eval_latency()
+    avg_latency = eval_runner.eval_latency()
     assert avg_latency < 5
 
 def test_end_to_end():
-    eval_end_to_end()
+    eval_runner.eval_end_to_end()
