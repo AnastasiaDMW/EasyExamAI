@@ -30,13 +30,11 @@ def eval_retrieval():
     success = 0
 
     for test in RETRIEVAL_TESTS:
-        # возвращает список Document
         docs = retrieve_documents(test["query"])
 
         if not docs:
             continue
 
-        # топ-1 документ
         top_doc_text = docs[0].page_content.lower()
 
         if test["expected_keyword"].lower() in top_doc_text:
