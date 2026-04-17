@@ -13,6 +13,13 @@ agent_calls = Counter(
     ["agent"]
 )
 
+token_usage = Histogram(
+    "easyexam_token_usage",
+    "Token usage",
+    ["type"],
+    buckets=[10, 50, 100, 200, 500, 1000, 2000, 4000]
+)
+
 # latency системы
 request_latency = Histogram(
     "easyexam_request_latency_seconds",

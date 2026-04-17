@@ -9,6 +9,7 @@ from monitoring.middleware import metrics_middleware
 from prometheus_client import generate_latest
 from fastapi.responses import Response
 from monitoring.logger import logger
+from monitoring.metrics import agent_calls
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -29,6 +30,8 @@ def metrics():
 def ask(data: Question):
     logger.info(f"API /ask received question: {data.question}")
     result = orchestrator(user_input=data.question)
+
+    agent_calls.labels(agent=result["agent"]).inc()
 
     return {
         "task": result["task"],
