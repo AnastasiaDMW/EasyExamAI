@@ -30,3 +30,5 @@ docx2txt
 prometheus-client
 
 pytest>=7.0
+
+tiktoken
