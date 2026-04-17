@@ -30,18 +30,16 @@ def load_document(path):
 def process_document(path):
     logger.info(f"Processing document: {path}")
 
-    docs = vector_db.similarity_search(path)
-
+    docs = load_document(path)
     logger.info(f"Loaded {len(docs)} document sections")
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=800,
         chunk_overlap=150
     )
-
     chunks = splitter.split_documents(docs)
-
     logger.info(f"Document split into {len(chunks)} chunks")
+
     for chunk in chunks:
         chunk.metadata["source"] = path
 
@@ -50,9 +48,7 @@ def process_document(path):
 
     full_text = "\n".join([doc.page_content for doc in docs])
 
-    prompt = document_prompt.format(
-        document=full_text
-    )
+    prompt = document_prompt.format(document=full_text)
     logger.info("Generating document summary")
 
     summary = llm.invoke(prompt)
